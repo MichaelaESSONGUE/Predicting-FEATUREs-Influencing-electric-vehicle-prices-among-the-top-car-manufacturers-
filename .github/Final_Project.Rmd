@@ -1,0 +1,494 @@
+---
+title: "Final Project (601)"
+output: html_document
+date: "2023-11-14"
+---
+
+   title: "Final Projectt"
+author: 
+date: 
+output: html_document
+---
+  
+  
+```{r}
+#Uncomment the following items only if you have not installed these libraries
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("tidyverse")
+install.packages("lubridate")
+
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+library(readr)
+Electric_cars <- read_csv("C:/Users/micha/Downloads/ElectricCars (1).csv" )
+head(Electric_cars )
+#Handle missing values :mean, median, or other imputation methods 
+ Electric_cars$Price[is.na(Electric_cars$Price)] <- mean(Electric_cars$Price, na.rm = TRUE)
+ 
+
+ Electric_cars$Battery_life <- parse_number(Electric_cars$Battery_life)
+
+
+```
+
+```{r}
+describe(Electric_cars)
+```
+```{r}
+
+multiple.regression <- lm(Price ~ .-Name, data = Electric_cars) 
+summary(multiple.regression)
+
+```
+
+```{r}
+ 
+install.packages("reshape2")
+library(reshape2)
+
+ 
+ 
+ residuals <- resid(multiple.regression)
+ Electric_cars$residuals <- residuals
+ cor_matrix <- cor(Electric_cars)
+ cor_df <- reshape2::melt(cor_matrix)
+ 
+ 
+ 
+ ggplot(data = cor_df, aes(x=Price, y=Battery_life, TopSpeed, FastChargeSpeed, Range, Efficiency, Acceleration, NumberofSeats, fill=value)) +
+geom_tile() +
+scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+midpoint = 0, limit = c(-1,1), space = "Lab",
+name="Pearson\nCorrelation") +
+theme_minimal() +
+theme(axis.text.x = element_text(angle = 45, vjust = 1,
+size = 12, hjust = 1),
+axis.text.y = element_text(size = 12)) +
+coord_fixed()
+ 
+
+``` 
+
+```{r}
+# Create a correlation matrix
+cor_matrix <- cor(Electric_cars[, c("Battery_life", "TopSpeed", "FastChargeSpeed","Range", "Efficiency", "Acceleration", "NumberofSeats")])
+
+# Create the heat map
+heatmap(cor_matrix)
+```
+
+
+
+
+
+```{r}
+## Random Forest Model
+
+install.packages("randomForest")
+library(randomForest)
+# import any character vectors as a factor (as a categorical variable)
+
+str(Electric_cars_F2)
+head(Electric_cars_F2)
+
+ # Create a binary target variable
+ Electric_cars_F2 <- Electric_cars_F2 %>% 
+  mutate(Affordability = if_else(Price>=53000, 1,0))
+
+
+ 
+# Train-Test Split
+
+library(rsample)
+set.seed(645)
+
+
+Car_split <- initial_split(Electric_cars_F2, prop = 0.7)
+
+Car_train <- training(Car_split)
+Car_test <- testing(Car_split)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+
+## Ensemble of Trees
+
+library(rpart)
+library(rpart.plot)
+ 
+ 
+
+
+# Classification tree (Single Decision Tree)
+
+ 
+
+Car_dtree <- rpart(as.factor(Affordability)~. -Price -Name,  data = Car_train, method = "class")
+ 
+rpart.plot(Car_dtree, cex= 0.8)
+
+print(Car_dtree)
+
+
+ 
+
+## Random Forest Model
+
+install.packages("randomForest")
+library(randomForest)
+
+rf_car <- randomForest(as.factor(Affordability) ~ . - Price -Name, data = Car_train, ntree = 1000, importance=TRUE,na.action=na.omit)
+
+plot(rf_car)
+varImpPlot(rf_car)
+rf_car
+
+ 
+
+
+
+# For numeric (not factor) target variables, regression tree is assumed.
+
+ 
+
+ rf_model <- randomForest(as.factor(Affordability)~.-Price -Name , data = Car_train, ntree = 1000, importance=TRUE,na.action=na.omit )
+
+plot(rf_model)
+varImpPlot(rf_model)
+importance(rf_model)
+ 
+ 
+
+
+
+# Gradient Boosting Model
+
+install.packages("gbm")
+library(gbm)
+ 
+ 
+
+
+grade_gbm_reg <- gbm(as.factor(Affordability) ~ .-Price -Name, data = Car_train, distribution = "gaussian",  n.trees = 1000)
+
+summary(grade_gbm_reg)
+
+```
+
+
+```{r}
+Electic_cars_filter <-filter(Electric_cars, Name %in% c ("Tesla", "BMW"))
+Electic_cars_filter
+ 
+LogisticRegression<-glm(Price ~.-Name, Battery_life+TopSpeed + data = Electic_cars_filter)
+summary(LogisticRegression) 
+
+```
+
+
+
+```{r}
+by_Name <- group_by(Electric_cars,Name )
+ S_Names <- summarise(by_Name,
+   Cars_count = n(),
+    
+)
+  
+ options(dplyr.summarise.inform = FALSE)
+ 
+ Sorted_Names <-arrange(S_Names, desc( Cars_count))
+head(Sorted_Names,15)
+```
+
+
+```{r}
+library(readr)
+CarSalesData <- read_csv("C:/Users/micha/Downloads/CarSalesData.csv")
+head(CarSalesData,5)
+  
+```
+
+
+
+
+```{r}
+by_Name2 <- group_by(CarSalesData,Name )
+ S_Maker <- summarise(by_Name2,
+   Cars_count = n(),
+    
+)
+  
+ options(dplyr.summarise.inform = FALSE)
+ 
+head(S_Maker,15)
+```
+```{r}
+by_Name3 <- group_by(Electric_cars,Name)
+ S_Maker3 <- summarise(by_Name3,
+   Cars_count = n(),
+   Battery_average = mean(Battery_life, na.rm = TRUE),
+   Acceleration_average = mean(Acceleration, na.rm = TRUE),
+   Speed_average = mean(TopSpeed, na.rm = TRUE),
+   Efficiency_average = mean(Range, na.rm = TRUE),
+   Seat_average = mean(NumberofSeats,na.rm = TRUE),
+   ChargeSpeed_average = mean(Efficiency, na.rm = TRUE),
+   Price_average = mean(Price, na.rm = TRUE)
+ )
+  
+ 
+ options(dplyr.summarise.inform = FALSE)
+  
+ 
+Cars_Maker<- filter(S_Maker3, Name %in% c("Audi", "Tesla", "Hyundai", "Porsche","Volkswagen", "Kia","Mercedes", "Nissan", "BMW","Ford"))
+print(Cars_Maker)
+
+
+ 
+head(Cars_Maker ,10)
+
+ 
+
+        
+```
+
+```{r}
+library(tidyverse)
+CarSaleAverage <- read_csv("CarSaleAverage.csv")
+str(CarSaleAverage)
+head(CarSaleAverage) 
+
+
+## Random Forest Model
+
+install.packages("randomForest")
+library(randomForest)
+
+ 
+
+```
+
+
+```{r}
+
+library(readr)
+CarRentalDataset <- read.csv("~/CarRentalDataset.csv ",stringsAsFactors = TRUE )
+head(CarRentalDataset,10) 
+
+CarRentSelected <- CarRentalDataset
+CarRentSelected <- CarRentSelected[ , c("rating" , "renterTripsTaken", "rate.daily", "vehicle.make")]
+CarRentSelected
+CarRentSelected1 <- filter(CarRentSelected, vehicle.make %in% c ("BMW" , "Tesla"))
+CarRentSelected1
+
+ CarRentSelected1$vehicle.make <- as.factor(CarRentSelected1$vehicle.make)
+  New <- model.matrix(~vehicle.make-1, CarRentSelected1)
+   CarRentSelected1 <- cbind(CarRentSelected1, New)
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+## Random Forest Model
+
+install.packages("randomForest")
+library(randomForest)
+
+# Create a binary target variable
+CarRentSelected1 <- CarRentSelected1 %>% 
+  mutate(Very_Satisfied = if_else(rating >=4.5, 3.0, 2.0, 1.0))
+
+
+# Train-Test Split
+
+library(rsample)
+set.seed(645)
+
+Rent_split <- initial_split(CarRentSelected1, prop = 0.7)
+
+Rent_train <- training(Rent_split)
+Rent_test <- testing(Rent_split)
+
+```                                                                                                                                                                                                                                                              
+
+```{r}
+## Ensemble of Trees
+
+library(rpart)
+library(rpart.plot)
+
+# Classification tree (Single Decision Tree)
+
+
+Rent_dtree <- rpart(rating ~ . -CarRentSelected1, data = Rent_train, method = "class")
+
+rpart.plot(Rent_dtree, cex=0.8)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+## Random Forest Model
+
+install.packages("randomForest")
+library(randomForest)
+
+Car_Sales <- randomForest(as.factor(pass) ~ . - Total_CarSale19_23, data = Sale_train, ntree = 1000, importance=TRUE,)
+
+
+plot(Car_Sales)
+varImpPlot(Car_Sales)
+
+ 
+# For numeric (not factor) target variables, regression tree is assumed.
+
+Sale_rf <- randomForest(Total_CarSale19_23 ~ . - pass, data = Sale_train, ntree = 1000, importance=TRUE)
+
+plot(Sale_rf)
+varImpPlot(Sale_rf)
+
+# Gradient Boosting Model
+
+install.packages("gbm")
+library(gbm)
+
+# For classification gradient boosting, the target variable should be binary (0 or 1) and the distribution be "bernoulli".
+
+Sale_gbm_class <- gbm(pass ~ . - Total_CarSale19_23, data = Sale_train, distribution = "bernoulli",  n.trees = 1000)
+
+summary(Sale_gbm_class)
+
+# For regression gradient boosting, the target variable should be numeric and the distribution be "gaussian".
+
+Sale_gbm_reg <- gbm(Total_CarSale19_23 ~ . - pass, data = Sale_train, distribution = "gaussian",  n.trees = 1000)
+
+summary(Sale_gbm_reg)
+
+
+```
+
+```{r}
+CarSaleAverage <- CarSaleAverage[,-1]
+multiple.regression <- lm(Price_average ~ ., data = CarSaleAverage )
+summary(multiple.regression)
+plot(CarSaleAverage)
+```
+
+
+```{r}
+Electric_cars <- Electric_cars[,-1]
+Regression1 <- lm(Price ~ ., data = Electric_cars) 
+Regression1
+summary(Regression1)$adj.r.squared
+summary(Regression1)$coefficients
+
+```
+
+```{r}
+Electric_cars <- Electric_cars[,-1]
+
+plot(Electric_cars)
+```
+
+```{r}
+
+multiple.regression <- lm(Price ~ ., data = Electric_cars )
+summary(multiple.regression)
+```
+
+
+```{r}
+correlation_matrix <- cor(Electric_cars)
+melted_correlation_matrix <- melt(correlation_matrix)
+
+ggplot(data = melted_correlation_matrix, aes(x=Var1, y=Var2, fill=value)) +
+geom_tile() +
+scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+midpoint = 0, limit = c(-1,1), space = "Lab",
+name="Pearson\nCorrelation") +
+theme_minimal() +
+theme(axis.text.x = element_text(angle = 45, vjust = 1,
+size = 12, hjust = 1),
+axis.text.y = element_text(size = 12)) +
+coord_fixed()
+
+```
+
+```{r}
+ggplot(Electric_cars, aes(x= TopSpeed, y=Price)) +
+geom_point() +
+geom_smooth(method="lm", se=FALSE)
+
+
+ggplot(Electric_cars, aes(x= Efficiency, y=Price)) +
+geom_point() +
+geom_smooth(method="lm", se=FALSE)
+
+
+
+ggplot(Electric_cars, aes(x= Range, y=Price)) +
+geom_point() +
+geom_smooth(method="lm", se=FALSE)
+
+ggplot(Electric_cars, aes(x= Battery_life, y=Price)) +
+geom_point() +
+geom_smooth(method="lm", se=FALSE)
+
+
+
+
+```
+
+```{r}
+Cars_Rating <- read_csv("C:/Users/micha/Downloads/CarRentalData.csv   ")
+head(Cars_Rating )
+```
+```{r}
+Filter_CarRating<- filter(Cars_Rating, fuelType %in% c("ELECTRIC"))
+print(Filter_CarRating)
+```
+
+
+```{r}
+ by_VehiculeMake <- group_by(Filter_CarRating,vehicle.make)
+ V_Make <- summarise(by_VehiculeMake,
+   I_count = n(),
+)
+  
+ options(dplyr.summarise.inform = FALSE)
+ 
+Sorted_V <-arrange(V_Make, desc(I_count))
+head(Sorted_V,5)  
+
+```
+ 
+
+```{r}
+CarSales <- read_csv("C:/Users/micha/Downloads/CarSales.xlsx")
+View(CarSales)
+```
+
